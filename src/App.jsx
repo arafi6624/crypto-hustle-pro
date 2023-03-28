@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { Input } from "semantic-ui-react";
-import CoinInfo from "./Components/coinInfo";
 import "./App.css";
+import React, { useEffect, useState } from "react";
+import CoinInfo from "./Components/coinInfo";
 const API_KEY = import.meta.env.VITE_APP_API_KEY;
 
 function App() {
@@ -9,10 +8,35 @@ function App() {
   const [filteredResults, setFilteredResults] = useState([]);
   const [searchInput, setSearchInput] = useState("");
 
+  useEffect(() => {
+    // declare the async data fetching function
+    const fetchAllCoinData = async () => {
+      const response = await fetch(
+        "https://min-api.cryptocompare.com/data/all/coinlist?&api_key" + API_KEY
+      );
+      const json = await response.json();
+      setList(getBlockchainCoins(json.Data));
+    };
+
+    // calls functions and handles error
+    fetchAllCoinData().catch(console.error);
+  }, []);
+
+  const getBlockchainCoins = (listCoins) => {
+    var blockchainCoins = {};
+    for (const [coinName, info] of Object.entries(listCoins)) {
+      if (info.PlatformType == "blockchain") {
+        blockchainCoins[coinName] = info;
+      }
+    } 
+    return blockchainCoins;
+  }
+
   const searchItems = (searchValue) => {
+    event.preventDefault();
     setSearchInput(searchValue);
     if (searchValue !== "") {
-      const filteredData = Object.keys(list.Data).filter((item) =>
+      const filteredData = Object.keys(list).filter((item) =>
         Object.values(item)
           .join("")
           .toLowerCase()
@@ -20,51 +44,37 @@ function App() {
       );
       setFilteredResults(filteredData);
     } else {
-      setFilteredResults(Object.keys(list.Data));
+      setFilteredResults(Object.keys(list));
     }
   };
-
-  useEffect(() => {
-    const fetchAllCoinData = async () => {
-      const response = await fetch(
-        "https://min-api.cryptocompare.com/data/all/coinlist?&api_key" + API_KEY
-      );
-
-      const json = await response.json();
-      setList(json);
-    };
-
-    fetchAllCoinData().catch(console.error);
-  }, []);
-
+  
   return (
     <div className="whole-page">
       <h1>My Crypto List</h1>
       <input
         type="text"
         placeholder="Search..."
-        onChange={(inputString) => searchItems(inputString.target.value)}
+        onChange={(e) => searchItems(e.target.value)}
       />
+      
       <ul>
-        {searchInput.length > 0
-          ? filteredResults.map((coin) =>
-              list.Data[coin].PlatformType === "blockchain" ? (
+        {searchInput.length > 0 && filteredResults
+          ? filteredResults.map((coin, index) =>
                 <CoinInfo
-                  image={list.Data[coin].ImageUrl}
-                  name={list.Data[coin].FullName}
-                  symbol={list.Data[coin].Symbol}
+                  image={list[coin].ImageUrl}
+                  name={list[coin].FullName}
+                  symbol={list[coin].Symbol}
+                  key={index}
                 />
-              ) : null
             )
           : list &&
-            Object.entries(list.Data).map(([coin]) =>
-              list.Data[coin].PlatformType === "blockchain" ? (
+            Object.entries(list).map(([coin], index) =>
                 <CoinInfo
-                  image={list.Data[coin].ImageUrl}
-                  name={list.Data[coin].FullName}
-                  symbol={list.Data[coin].Symbol}
+                  image={list[coin].ImageUrl}
+                  name={list[coin].FullName}
+                  symbol={list[coin].Symbol}
+                  key={index}
                 />
-              ) : null
             )}
       </ul>
     </div>
